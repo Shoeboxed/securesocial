@@ -19,19 +19,17 @@ package securesocial.controllers
 import play.api.mvc._
 import play.api.i18n.Messages
 import securesocial.core._
-import play.api.{Play, Logger}
+import play.api.{ Play, Logger }
 import Play.current
 import providers.utils.RoutesHelper
 import securesocial.core.LoginEvent
 import securesocial.core.AccessDeniedException
 import scala.Some
 
-
 /**
  * A controller to provide the authentication entry point
  */
-object ProviderController extends Controller
-{
+object ProviderController extends Controller {
   /**
    * The property that specifies the page the user is redirected to if there is no original URL saved in
    * the session.
@@ -62,8 +60,7 @@ object ProviderController extends Controller
    * @return
    */
   def landingUrl = Play.configuration.getString(onLoginGoTo).getOrElse(
-    Play.configuration.getString(ApplicationContext).getOrElse(Root)
-  )
+    Play.configuration.getString(ApplicationContext).getOrElse(Root))
 
   /**
    * Renders a not authorized page if the Authorization object passed to the action does not allow
@@ -89,14 +86,16 @@ object ProviderController extends Controller
     Registry.providers.get(provider) match {
       case Some(p) => {
         try {
-          p.authenticate().fold( result => result , {
+          p.authenticate().fold(result => result, {
             user => completeAuthentication(user, session)
           })
         } catch {
           case ex: AccessDeniedException => {
             Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
           }
-
+          case ex: UnidentifiedUserException => {
+            Redirect(s"/connect", Map("uid" -> Seq(ex.user.identityId.userId), "pid" -> Seq(ex.user.identityId.providerId)), 302)
+          }
           case other: Throwable => {
             Logger.error("Unable to log user in. An exception was thrown", other)
             Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
@@ -108,7 +107,7 @@ object ProviderController extends Controller
   }
 
   def completeAuthentication(user: Identity, session: Session)(implicit request: RequestHeader): SimpleResult = {
-    if ( Logger.isDebugEnabled ) {
+    if (Logger.isDebugEnabled) {
       Logger.debug("[securesocial] user logged in : [" + user + "]")
     }
     val withSession = Events.fire(new LoginEvent(user)).getOrElse(session)
