@@ -93,17 +93,21 @@ object ProviderController extends Controller {
           case ex: AccessDeniedException => {
             Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
           }
-          case ex: UnidentifiedUserException => {
-            Redirect(s"/connect", Map("uid" -> Seq(ex.user.identityId.userId), "pid" -> Seq(ex.user.identityId.providerId)), 302)
-          }
           case other: Throwable => {
-            Logger.error("Unable to log user in. An exception was thrown", other)
-            Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
+            maybePlugin[AuthFlowErrorHandlerPlugin]
+              .flatMap(_.handler.handle(other)).getOrElse {
+                Logger.error("Unable to log user in. An exception was thrown", other)
+                Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.errorLoggingIn"))
+              }
           }
         }
       }
       case _ => NotFound
     }
+  }
+  
+  private def maybePlugin[A <: play.api.Plugin](implicit app: play.api.Application, m: Manifest[A]) = {
+    app.plugin[A]
   }
 
   def completeAuthentication(user: Identity, session: Session)(implicit request: RequestHeader): SimpleResult = {
