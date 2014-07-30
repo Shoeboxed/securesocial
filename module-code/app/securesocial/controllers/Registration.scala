@@ -302,7 +302,7 @@ object Registration extends Controller {
       p => {
         val (toFlash, eventSession) = UserService.findByEmailAndProvider(t.email, UsernamePasswordProvider.UsernamePassword) match {
           case Some(user) => {
-            val hashed = Registry.hashers.currentHasher.hash(p._1)
+            val hashed = Registry.hashers.currentHasher.hash(p._1, Option(user))
             val updated = UserService.save( SocialUser(user).copy(passwordInfo = Some(hashed)) )
             UserService.deleteToken(token)
             Mailer.sendPasswordChangedNotice(updated)

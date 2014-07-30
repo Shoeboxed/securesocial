@@ -2,7 +2,7 @@ import play.Project._
 
 name := "securesocial"
 
-version := "2.1.3.3"
+version := "2.1.3.4"
 
 scalaVersion := "2.10.3"
 

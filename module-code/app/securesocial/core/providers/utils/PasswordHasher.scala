@@ -16,7 +16,7 @@
  */
 package securesocial.core.providers.utils
 
-import securesocial.core.{Registry, Registrable, PasswordInfo}
+import securesocial.core.{Identity, Registry, Registrable, PasswordInfo}
 import play.api.{Logger, Plugin, Application}
 import org.mindrot.jbcrypt._
 
@@ -40,9 +40,10 @@ abstract class PasswordHasher extends Plugin with Registrable {
    * Hashes a password
    *
    * @param plainPassword the password to hash
-   * @return a PasswordInfo containting the hashed password and optional salt
+   * @param identity the current identity
+   * @return a PasswordInfo containing the hashed password and optional salt
    */
-  def hash(plainPassword: String): PasswordInfo
+  def hash(plainPassword: String, identity: Option[Identity] = None): PasswordInfo
 
   /**
    * Checks whether a supplied password matches the hashed one
@@ -75,7 +76,7 @@ class BCryptPasswordHasher(app: Application) extends PasswordHasher {
    * @param plainPassword the password to hash
    * @return a PasswordInfo containing the hashed password.
    */
-  def hash(plainPassword: String): PasswordInfo = {
+  def hash(plainPassword: String, identity: Option[Identity] = None): PasswordInfo = {
     val logRounds = app.configuration.getInt(RoundsProperty).getOrElse(DefaultRounds)
     PasswordInfo(id, BCrypt.hashpw(plainPassword, BCrypt.gensalt(logRounds)))
   }
